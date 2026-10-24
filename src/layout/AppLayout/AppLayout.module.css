@@ -1,0 +1,34 @@
+.shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: 40px 40px calc(var(--bar-height) + 48px);
+}
+
+/* One centered column for every page: the rail is fixed, so the content sits in the middle
+   of the remaining space instead of hugging the left edge. */
+.content {
+  width: 100%;
+  max-width: var(--content-width);
+  margin-inline: auto;
+}
+
+.notice {
+  margin-bottom: 20px;
+  padding: 10px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface-raised);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+@media (max-width: 720px) {
+  .main {
+    padding: 22px 16px 160px;
+  }
+}

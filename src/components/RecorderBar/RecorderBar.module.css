@@ -1,0 +1,255 @@
+.wrap {
+  position: fixed;
+  inset-inline: var(--rail-width) 0;
+  inset-block-end: 0;
+  z-index: 20;
+}
+
+.bar {
+  display: grid;
+  grid-template-columns: 210px 108px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 18px;
+  height: var(--bar-height);
+  padding: 0 20px;
+  background: var(--bar-bg);
+  color: var(--bar-ink);
+  border-block-start: 1px solid var(--bar-line);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--line-strong);
+  flex: none;
+}
+
+.dot[data-live='true'] {
+  background: var(--accent);
+  animation: dot-pulse 1.4s ease-in-out infinite;
+}
+
+.statusText {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.engine {
+  font-size: 11px;
+  color: var(--bar-muted);
+  white-space: nowrap;
+}
+
+.meter {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 28px;
+}
+
+.meterBar {
+  width: 3px;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+  transform-origin: bottom;
+  transform: scaleY(0.15);
+}
+
+.meterBar[data-idle='false'] {
+  animation: level-bounce 620ms ease-in-out infinite alternate;
+}
+
+.meterBar[data-idle='true'] {
+  transform: scaleY(0.3);
+  opacity: 0.45;
+}
+
+.measured {
+  animation: none;
+}
+
+.ticker {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--bar-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.time {
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.expand {
+  font-size: 11px;
+  color: var(--bar-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.expand:hover:not(:disabled) {
+  color: var(--bar-ink);
+}
+
+.expand:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  text-decoration: none;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.error {
+  font-size: 12px;
+  color: var(--danger);
+}
+
+.playIcon {
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 7px 0 7px 12px;
+  border-color: transparent transparent transparent currentColor;
+}
+
+/* Two strips sit on top of the bar: the read-only transcript, then the save decision after Stop. */
+.panel {
+  max-height: 34vh;
+  overflow: auto;
+  padding: 16px 20px;
+  background: var(--surface-raised);
+  color: var(--bar-ink);
+  border-block-start: 1px solid var(--bar-line);
+}
+
+.panelLines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.panelLine {
+  font-size: 15px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.panelNote {
+  margin-top: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--bar-muted);
+}
+
+.commit {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 20px;
+  background: var(--bar-bg);
+  border-block-start: 1px solid var(--bar-line);
+}
+
+.commitLabel {
+  font-size: 13px;
+  color: var(--bar-muted);
+}
+
+.commitActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.commitError {
+  font-size: 12px;
+  color: var(--danger);
+}
+
+@keyframes level-bounce {
+  from {
+    transform: scaleY(0.18);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes dot-pulse {
+  50% {
+    opacity: 0.35;
+    transform: scale(0.72);
+  }
+}
+
+@media (max-width: 1180px) {
+  .bar {
+    grid-template-columns: 190px minmax(0, 1fr) auto auto;
+  }
+
+  .meter {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .wrap {
+    inset-inline: 62px 0;
+  }
+
+  .bar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'status controls'
+      'ticker ticker';
+    height: auto;
+    padding: 12px 14px;
+    row-gap: 8px;
+  }
+
+  .status {
+    grid-area: status;
+  }
+
+  .ticker {
+    grid-area: ticker;
+  }
+
+  .meta {
+    display: none;
+  }
+
+  .controls {
+    grid-area: controls;
+  }
+}
