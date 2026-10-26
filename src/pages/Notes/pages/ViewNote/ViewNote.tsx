@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Pin, Plus, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Download, Pin, Plus, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/Button/Button'
+import { env } from '@/constants/env'
+import { downloadNote } from '@/services/download'
 import { useRecorder } from '@/context/RecorderContext'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { ReminderForm } from './components/ReminderForm/ReminderForm'
@@ -165,6 +167,17 @@ export function ViewNote() {
           >
             <Pin size={16} aria-hidden="true" />
           </Button>
+          {env.dataSource === 'http' && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => downloadNote(note.id, 'md')}
+              aria-label="Export note as markdown"
+              title="Export as Markdown"
+            >
+              <Download size={16} aria-hidden="true" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"

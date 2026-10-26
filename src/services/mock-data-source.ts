@@ -2,6 +2,7 @@ import { isPurgeDue, purgeDateFor } from '@/constants/bin'
 import type {
   ISODate,
   Note,
+  NoteBlock,
   NoteQuery,
   Page,
   Reminder,
@@ -95,10 +96,11 @@ function nextColor() {
   return COLOR_ORDER[store.notes.filter((note) => !note.deletedAt).length % COLOR_ORDER.length] ?? 'sand'
 }
 
-function newBlock(input: NewBlockInput) {
+function newBlock(input: NewBlockInput): NoteBlock {
   return {
     id: localId('blk'),
     text: input.text,
+    source: input.source ?? 'typed',
     createdAt: input.createdAt ?? new Date().toISOString(),
   }
 }
@@ -148,6 +150,7 @@ export const mockDataSource: DataSource = {
           .filter((note) => (query.tag ? note.tags.some((tag) => tag.name === query.tag) : true))
           .filter((note) => (query.color ? note.color === query.color : true))
           .filter((note) => (query.today ? new Date(note.updatedAt).getTime() >= from : true))
+          .filter((note) => (query.source === 'dictation' ? note.body.some((b) => b.source === 'dictation') : true))
           .filter((note) => (needle ? textOf(note).includes(needle) : true))
           .sort((a, b) => compare(a, b, query.sort))
         return { items, page: 1, pageSize: items.length, total: items.length } satisfies Page<Note>

@@ -19,13 +19,27 @@ export interface User {
   email: string
   name: string
   timezone: string
+  role?: string
+  expiresAt?: ISODate
 }
 
 export interface Session {
   user: User
   accessToken: string
-  refreshToken: string
 }
+
+export interface CredentialRow {
+  id: string
+  email: string
+  label?: string
+  createdAt: ISODate
+  lastLoginAt?: ISODate
+  expiresAt?: ISODate
+  disabledAt?: ISODate
+  lockedUntil?: ISODate
+}
+
+export type ExportFormat = 'md' | 'txt' | 'json'
 
 export type NoteColor = 'sand' | 'coral' | 'violet' | 'aqua' | 'lime' | 'mint'
 
@@ -41,6 +55,7 @@ export interface Tag {
 export interface NoteBlock {
   id: string
   text: string
+  source?: 'typed' | 'dictation'
   createdAt: ISODate
 }
 
@@ -67,6 +82,7 @@ export interface NoteQuery {
   color?: NoteColor
   scope?: NoteScope
   today?: boolean
+  source?: 'all' | 'dictation'
   sort?: 'updated' | 'created' | 'title' | 'purged'
   page?: number
   pageSize?: number

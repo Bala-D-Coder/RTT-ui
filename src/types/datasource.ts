@@ -22,6 +22,7 @@ export type NotePatch = Partial<
 
 export interface NewBlockInput {
   text: string
+  source?: 'typed' | 'dictation'
   createdAt?: ISODate
 }
 

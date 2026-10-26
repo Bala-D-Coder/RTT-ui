@@ -1,6 +1,7 @@
 import { env } from '@/constants/env'
 import type { DataSource } from '@/types/datasource'
 import { mockDataSource } from './mock-data-source'
+import { httpDataSource } from './http-data-source'
 
 /**
  * The single persistence seam. Components and page services import `db` and never
@@ -10,9 +11,7 @@ export const db: DataSource = createDataSource()
 
 function createDataSource(): DataSource {
   if (env.dataSource === 'http') {
-    throw new Error(
-      'VITE_DATA_SOURCE=http needs the RTT-api milestone. Run the UI with the default mock source.',
-    )
+    return httpDataSource
   }
   return mockDataSource
 }

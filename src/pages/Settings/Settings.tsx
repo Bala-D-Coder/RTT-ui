@@ -1,143 +1,247 @@
-import { useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
-import { Monitor } from 'lucide-react'
-import { Button } from '@/components/Button/Button'
-import { env } from '@/constants/env'
-import { BIN_RETENTION_DAYS } from '@/constants/bin'
-import { useNotifications } from '@/context/NotificationsContext'
-import { useRecorder } from '@/context/RecorderContext'
-import { useBinCount } from '@/hooks/useBinCount'
-import { usePageTitle } from '@/hooks/usePageTitle'
+import { useState, useMemo, type FormEvent } from 'react'
+import { Check, Clock, LogOut, Moon, Sparkles, Star, Sun, User as UserIcon } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
+import { useModal } from '@/context/ModalContext'
 import { useTheme } from '@/hooks/useTheme'
-import { db } from '@/services/data-source'
-import { engineChoice, setEngineChoice, type EngineName } from '@/services/transcription'
-import { isWebSpeechSupported } from '@/services/web-speech'
-import { refreshNoteViews } from '@/utils/queryKeys'
+import { usePageTitle } from '@/hooks/usePageTitle'
+import { submitFeedback } from '@/services/feedback'
 import styles from './Settings.module.css'
 
-const ENGINES: Array<{ value: EngineName; label: string; blurb: string }> = [
-  { value: 'webspeech', label: 'Browser Web Speech', blurb: 'Live microphone, $0, no quota. Chromium and Safari only.' },
-  { value: 'replay', label: 'Replay take', blurb: 'Canned Hinglish transcript for demos and CI where no mic is available.' },
-]
-
-const THEMES = [
-  { value: 'light' as const, label: 'Light' },
-  { value: 'dark' as const, label: 'Dark' },
-]
-
 export function Settings() {
-  usePageTitle('Settings')
-  const recorder = useRecorder()
-  const client = useQueryClient()
-  const { push } = useNotifications()
+  usePageTitle('Settings & Profile')
+  const { user, isAdmin, logout } = useAuth()
   const { theme, setTheme } = useTheme()
-  const binCount = useBinCount()
-  const [choice, setChoice] = useState<EngineName>(() => engineChoice())
-  const [busy, setBusy] = useState(false)
+  const modal = useModal()
 
-  const rows: Array<{ label: string; value: string; note?: string }> = [
-    {
-      label: 'Data source',
-      value: env.dataSource === 'mock' ? 'Local fixtures (localStorage)' : env.apiUrl,
-      note: 'Same DataSource interface the API milestone implements over HTTP',
-    },
-    {
-      label: 'Browser speech support',
-      value: isWebSpeechSupported() ? 'Available' : 'Not available',
-      note: 'Word-by-word interim text uses this API',
-    },
-    {
-      label: 'Bin retention',
-      value: `${BIN_RETENTION_DAYS} days`,
-      note: `${binCount} note${binCount === 1 ? '' : 's'} waiting to be purged`,
-    },
-    { label: 'Build', value: import.meta.env.MODE },
-  ]
+  // Star Rating & Review State
+  const [rating, setRating] = useState<number>(5)
+  const [hoverRating, setHoverRating] = useState<number | null>(null)
+  const [review, setReview] = useState<string>('')
+  const [submittingFeedback, setSubmittingFeedback] = useState(false)
+  const [feedbackSuccess, setFeedbackSuccess] = useState(false)
 
-  async function resetDemoData() {
-    setBusy(true)
-    await db.resetDemoData()
-    refreshNoteViews(client)
-    setBusy(false)
-    push({ title: 'Demo data', body: 'Notes and reminders are back to the seeded set.', to: '/' })
+  async function handleLogout() {
+    const ok = await modal.confirm({
+      title: 'Sign Out',
+      message: `Are you sure you want to log out of ${user?.email || 'your account'}?`,
+      confirmText: 'Log Out',
+      cancelText: 'Stay Signed In',
+      variant: 'warning',
+    })
+    if (ok) {
+      await logout()
+    }
+  }
+
+  async function handleSubmitReview(e: FormEvent) {
+    e.preventDefault()
+    if (!user) return
+
+    setSubmittingFeedback(true)
+    try {
+      await submitFeedback({
+        email: user.email,
+        rating,
+        review: review.trim() || undefined,
+        role: user.role,
+      })
+      setFeedbackSuccess(true)
+      setTimeout(() => setFeedbackSuccess(false), 7000)
+    } catch (err) {
+      await modal.alert({
+        title: 'Review Failed',
+        message: 'Failed to submit review: ' + (err as Error).message,
+        variant: 'danger',
+      })
+    } finally {
+      setSubmittingFeedback(false)
+    }
+  }
+
+  // Calculate remaining days / hours
+  const expiryInfo = useMemo(() => {
+    if (!user?.expiresAt) return 'Permanent Access'
+    const expiresMs = new Date(user.expiresAt).getTime()
+    const nowMs = Date.now()
+    const diffHours = Math.round((expiresMs - nowMs) / (1000 * 60 * 60))
+    if (diffHours <= 0) {
+      return 'Expired'
+    } else if (diffHours < 24) {
+      return `${diffHours} hour${diffHours === 1 ? '' : 's'} remaining`
+    } else {
+      const diffDays = Math.round(diffHours / 24)
+      return `${diffDays} day${diffDays === 1 ? '' : 's'} remaining`
+    }
+  }, [user?.expiresAt])
+
+  const ratingDescriptions: Record<number, string> = {
+    1: 'Poor — Significant issues encountered',
+    2: 'Fair — Needs improvement in speed or accuracy',
+    3: 'Good — Works as expected',
+    4: 'Very Good — Smooth and responsive transcription',
+    5: 'Excellent — Extremely fast, accurate, and impressed!',
   }
 
   return (
     <div className={styles.wrap}>
-      <h1 className={styles.title}>Settings</h1>
-
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Appearance</h2>
-        <div className={styles.segment} role="group" aria-label="Theme">
-          {THEMES.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              className={styles.segmentButton}
-              data-active={theme === option.value}
-              onClick={() => setTheme(option.value)}
-              aria-pressed={theme === option.value}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-        <p className={styles.hint}>
-          <Monitor size={13} aria-hidden="true" /> The theme is stored in this browser and applies the
-          moment you pick it. On first load it follows your system setting.
+      <header className={styles.header}>
+        <h1 className={styles.title}>Settings & Profile</h1>
+        <p className={styles.subtitle}>
+          Manage your workspace session, theme preferences, and share feedback.
         </p>
-      </section>
+      </header>
 
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Dictation engine</h2>
-        <div className={styles.engines}>
-          {ENGINES.map((option) => (
-            <label key={option.value} className={styles.engine} data-active={choice === option.value}>
-              <input
-                type="radio"
-                name="engine"
-                value={option.value}
-                checked={choice === option.value}
-                onChange={() => {
-                  setChoice(option.value)
-                  setEngineChoice(option.value)
-                }}
-              />
-              <span className={styles.engineLabel}>{option.label}</span>
-              <span className={styles.engineBlurb}>{option.blurb}</span>
-            </label>
-          ))}
+      {/* Account Profile & Validity Card */}
+      <section className={styles.card}>
+        <div className={styles.cardHeader}>
+          <div className={styles.cardTitle}>
+            <UserIcon size={18} style={{ color: 'var(--accent)' }} />
+            Account & Session Validity
+          </div>
+          <span className={`${styles.pill} ${isAdmin ? styles.pillAdmin : styles.pillActive}`}>
+            {isAdmin ? 'Super Admin' : 'Active User'}
+          </span>
         </div>
-        <p className={styles.hint}>
-          Running <strong>{recorder.driverName}</strong> ({recorder.model}). Changing this stops any
-          dictation in progress.
-        </p>
-      </section>
 
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Runtime</h2>
-        <dl className={styles.list}>
-          {rows.map((row) => (
-            <div key={row.label} className={styles.row}>
-              <dt className={styles.label}>{row.label}</dt>
-              <dd className={styles.value}>
-                {row.value}
-                {row.note ? <span className={styles.note}>{row.note}</span> : null}
-              </dd>
+        <div className={styles.accountList}>
+          <div className={styles.accountRow}>
+            <span className={styles.accountLabel}>Email Address</span>
+            <span className={styles.accountValue}>{user?.email || '—'}</span>
+          </div>
+
+          <div className={styles.accountRow}>
+            <span className={styles.accountLabel}>User Name / Role</span>
+            <span className={styles.accountValue}>{user?.name || user?.role || 'Reviewer'}</span>
+          </div>
+
+          <div className={styles.accountRow}>
+            <span className={styles.accountLabel}>Session Expiry</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className={styles.accountValue}>
+                {user?.expiresAt
+                  ? new Date(user.expiresAt).toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                  : 'Never Expires'}
+              </span>
+              <span className={`${styles.pill} ${styles.pillActive}`}>
+                <Clock size={11} /> {expiryInfo}
+              </span>
             </div>
-          ))}
-        </dl>
+          </div>
+        </div>
       </section>
 
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Demo data</h2>
-        <p className={styles.hint}>
-          Everything you capture is stored in this browser only. Seeded content is realistic
-          Hindi-English notes and reminders so every screen has something to show.
+      {/* Appearance Theme Card */}
+      <section className={styles.card}>
+        <div className={styles.cardHeader}>
+          <div className={styles.cardTitle}>
+            <Sun size={18} style={{ color: 'var(--accent)' }} />
+            Interface Theme
+          </div>
+        </div>
+        <p className={styles.cardDesc}>
+          Switch between crisp Obsidian Dark mode and clean Light mode.
         </p>
-        <Button variant="danger" onClick={() => void resetDemoData()} disabled={busy}>
-          {busy ? 'Resetting…' : 'Reset demo data'}
-        </Button>
+        <div className={styles.segment} role="group" aria-label="Theme">
+          <button
+            type="button"
+            className={styles.segmentButton}
+            data-active={theme === 'dark'}
+            onClick={() => setTheme('dark')}
+          >
+            <Moon size={14} /> Dark Mode
+          </button>
+          <button
+            type="button"
+            className={styles.segmentButton}
+            data-active={theme === 'light'}
+            onClick={() => setTheme('light')}
+          >
+            <Sun size={14} /> Light Mode
+          </button>
+        </div>
+      </section>
+
+      {/* 5-Star Application Rating & Review Card */}
+      <section className={styles.card}>
+        <div className={styles.cardHeader}>
+          <div className={styles.cardTitle}>
+            <Star size={18} style={{ color: '#facc15' }} />
+            Rate EnGo Transcription
+          </div>
+        </div>
+        <p className={styles.cardDesc}>
+          How was your experience with real-time speech transcription, speed, and accuracy?
+          <br />
+          Your rating will be logged.
+        </p>
+
+        {feedbackSuccess ? (
+          <div className={styles.reviewSuccess}>
+            <Check size={18} />
+            <span>Thank you for your review! Your 5-star rating and feedback were successfully recorded.</span>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmitReview} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div>
+              <div className={styles.starRow}>
+                {[1, 2, 3, 4, 5].map((starValue) => {
+                  const effectiveRating = hoverRating !== null ? hoverRating : rating
+                  const isFilled = starValue <= effectiveRating
+                  return (
+                    <button
+                      key={starValue}
+                      type="button"
+                      className={`${styles.starBtn} ${isFilled ? styles.starFilled : ''}`}
+                      onMouseEnter={() => setHoverRating(starValue)}
+                      onMouseLeave={() => setHoverRating(null)}
+                      onClick={() => setRating(starValue)}
+                      aria-label={`Rate ${starValue} stars`}
+                    >
+                      <Star size={26} />
+                    </button>
+                  )
+                })}
+                <span className={styles.ratingLabel}>
+                  {ratingDescriptions[hoverRating !== null ? hoverRating : rating]}
+                </span>
+              </div>
+            </div>
+
+            <textarea
+              className={styles.textarea}
+              placeholder="What did you like about the voice transcription? Any latency or accuracy feedback?"
+              value={review}
+              onChange={(e) => setReview(e.target.value)}
+            />
+
+            <button type="submit" disabled={submittingFeedback} className={styles.submitBtn}>
+              {submittingFeedback ? <Sparkles size={14} /> : <Check size={14} />}
+              {submittingFeedback ? 'Sending Feedback…' : 'Submit Review to Google Sheets'}
+            </button>
+          </form>
+        )}
+      </section>
+
+      {/* Logout Card */}
+      <section className={`${styles.card} ${styles.logoutCard}`}>
+        <div className={styles.cardHeader}>
+          <div className={styles.cardTitle} style={{ color: '#f87171' }}>
+            <LogOut size={18} />
+            Session Security & Logout
+          </div>
+        </div>
+        <p className={styles.cardDesc}>
+          End your active session on this device. You will need your login credentials to sign in again.
+        </p>
+        <button type="button" onClick={handleLogout} className={styles.logoutBtn}>
+          <LogOut size={15} /> Log Out of Workspace
+        </button>
       </section>
     </div>
   )

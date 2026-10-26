@@ -24,7 +24,7 @@ export function useDictationCommit() {
   const saveAsNote = useMutation({
     mutationFn: async () => {
       const transcript = text()
-      return db.notes.create({ title: titleFrom(transcript), body: [{ text: transcript }] })
+      return db.notes.create({ title: titleFrom(transcript), body: [{ text: transcript, source: 'dictation' }] })
     },
     onSuccess: () => {
       refreshNoteViews(client)
@@ -35,7 +35,7 @@ export function useDictationCommit() {
   const addToNote = useMutation({
     mutationFn: async (noteId: string) => {
       const body = text()
-      return db.notes.appendBlock(noteId, { text: body })
+      return db.notes.appendBlock(noteId, { text: body, source: 'dictation' })
     },
     onSuccess: () => {
       refreshNoteViews(client)

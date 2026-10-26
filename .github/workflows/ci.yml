@@ -1,0 +1,42 @@
+name: RTT-ui CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-typecheck-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (oxlint)
+        run: npm run lint
+
+      - name: Typecheck (tsc -b)
+        run: npm run typecheck
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Check OpenAPI generated types drift (if target/openapi.json exists)
+        run: |
+          if [ -f "../RTT-api/target/openapi.json" ]; then
+            npx openapi-typescript ../RTT-api/target/openapi.json -o src/types/api.gen.ts
+            git diff --exit-code src/types/api.gen.ts || (echo "ERROR: api.gen.ts has drifted from target/openapi.json" && exit 1)
+          else
+            echo "Standalone UI check: api.gen.ts is committed and passes typecheck."
+          fi

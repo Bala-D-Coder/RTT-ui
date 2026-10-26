@@ -1,7 +1,7 @@
-import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Trash2 } from 'lucide-react'
 import { Button } from '@/components/Button/Button'
+import { useModal } from '@/context/ModalContext'
 import { BIN_RETENTION_DAYS } from '@/constants/bin'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { queryKeys, refreshNoteViews } from '@/utils/queryKeys'
@@ -12,7 +12,7 @@ import styles from './Bin.module.css'
 export function Bin() {
   usePageTitle('Bin')
   const client = useQueryClient()
-  const [confirmEmpty, setConfirmEmpty] = useState(false)
+  const modal = useModal()
 
   const binQuery = useQuery({ queryKey: queryKeys.binList, queryFn: listBinned })
 
@@ -27,7 +27,6 @@ export function Bin() {
   const emptyMutation = useMutation({
     mutationFn: () => emptyBin(),
     onSuccess: () => {
-      setConfirmEmpty(false)
       refreshNoteViews(client)
     },
   })
@@ -35,6 +34,19 @@ export function Bin() {
   const notes = binQuery.data?.items ?? []
   const busy = restoreMutation.isPending || purgeMutation.isPending
   const actionFailed = restoreMutation.isError || purgeMutation.isError || emptyMutation.isError
+
+  async function handleEmptyBin() {
+    const ok = await modal.confirm({
+      title: 'Empty Bin',
+      message: `Permanently delete all ${notes.length} note${notes.length === 1 ? '' : 's'} currently in the bin? This action cannot be undone.`,
+      confirmText: 'Empty Bin Forever',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    })
+    if (ok) {
+      emptyMutation.mutate()
+    }
+  }
 
   return (
     <div className={styles.wrap}>
@@ -52,30 +64,14 @@ export function Bin() {
         </div>
 
         <div className={styles.headActions}>
-          {confirmEmpty ? (
-            <>
-              <Button
-                variant="danger"
-                onClick={() => emptyMutation.mutate()}
-                disabled={emptyMutation.isPending}
-              >
-                <Trash2 size={15} aria-hidden="true" />
-                Confirm empty
-              </Button>
-              <Button variant="ghost" onClick={() => setConfirmEmpty(false)}>
-                Cancel
-              </Button>
-            </>
-          ) : (
-            <Button
-              variant="secondary"
-              onClick={() => setConfirmEmpty(true)}
-              disabled={notes.length === 0}
-            >
-              <Trash2 size={15} aria-hidden="true" />
-              Empty bin
-            </Button>
-          )}
+          <Button
+            variant="secondary"
+            onClick={handleEmptyBin}
+            disabled={notes.length === 0 || emptyMutation.isPending}
+          >
+            <Trash2 size={15} aria-hidden="true" />
+            Empty bin
+          </Button>
         </div>
       </header>
 
