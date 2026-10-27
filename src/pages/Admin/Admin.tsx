@@ -44,6 +44,7 @@ interface IssuedResult {
 }
 
 const ENGINES: Array<{ value: EngineName; label: string; blurb: string }> = [
+  { value: 'whisper', label: 'Gemini Live (Cloud Streaming)', blurb: 'Streams 16kHz audio over WebSocket to Gemini 2.0 Flash on Google TPUs. Real-time speed.' },
   { value: 'webspeech', label: 'Browser Web Speech', blurb: 'Live microphone, $0, no quota. Chromium and Safari only.' },
   { value: 'replay', label: 'Replay take', blurb: 'Canned Hinglish transcript for demos and CI where no mic is available.' },
 ]

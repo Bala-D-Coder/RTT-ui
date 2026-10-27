@@ -40,6 +40,7 @@ interface RecorderValue {
   activeNoteId: string | null
   start: () => void
   stop: () => void
+  cancel: () => void
   bindNote: (id: string | null) => void
   toggleExpanded: () => void
   reset: () => void
@@ -152,6 +153,7 @@ export function RecorderProvider({ children }: { children: ReactNode }) {
     setLevels(null)
     setStatus('idle')
     setErrorMessage(null)
+    setExpanded(false)
   }, [driver])
 
   const transcript = useMemo(() => lines.join(' ').trim(), [lines])
@@ -173,6 +175,7 @@ export function RecorderProvider({ children }: { children: ReactNode }) {
     activeNoteId,
     start,
     stop,
+    cancel: reset,
     bindNote: setActiveNoteId,
     toggleExpanded: () => setExpanded((current) => !current),
     reset,

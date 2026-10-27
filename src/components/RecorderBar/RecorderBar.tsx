@@ -1,9 +1,11 @@
+import { useCallback, useEffect } from 'react'
 import { Check, Plus, Square, X } from 'lucide-react'
 import { Button } from '@/components/Button/Button'
 import { meterBars, statusLabels } from '@/constants/recorderLabels'
 import { useRecorder } from '@/context/RecorderContext'
+import { useModal } from '@/context/ModalContext'
 import { useDictationCommit } from '@/hooks/useDictationCommit'
-import { langLabel } from '@/services/transcription'
+import { langLabel, setEngineChoice } from '@/services/transcription'
 import { cx, formatDuration } from '@/utils/format'
 import styles from './RecorderBar.module.css'
 
@@ -28,15 +30,72 @@ export function RecorderBar() {
     reset,
   } = useRecorder()
   const commit = useDictationCommit()
+  const modal = useModal()
 
   const live = status === 'listening'
+  const hasActiveSession = live || hasContent || elapsedMs > 0
   const readyToSave = hasContent && !live
   const ticker = interim || transcript || 'Press the mic and speak — words appear here.'
+
+  const handleCycleEngine = () => {
+    if (live) return
+    if (engine === 'webspeech') {
+      setEngineChoice('whisper')
+    } else {
+      setEngineChoice('webspeech')
+    }
+  }
+
+  const handleCancel = useCallback(async () => {
+    const wasLive = status === 'listening' || status === 'requesting'
+    if (wasLive) {
+      stop()
+    }
+    // If user has substantial text recorded, confirm with custom modal to avoid accidental loss
+    if (wordCount > 3) {
+      const ok = await modal.confirm({
+        title: 'Cancel Transcription?',
+        message: `You have ${wordCount} words transcribed. Are you sure you want to cancel and discard this transcription?`,
+        confirmText: 'Discard Transcription',
+        cancelText: wasLive ? 'Keep & Save' : 'Keep',
+        variant: 'danger',
+      })
+      if (!ok) return
+    }
+    reset()
+  }, [status, stop, wordCount, modal, reset])
+
+  // Escape key cancels live recording
+  useEffect(() => {
+    if (!live) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        void handleCancel()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [live, handleCancel])
 
   return (
     <section className={styles.wrap} data-status={status} aria-label="Dictation">
       {expanded ? (
         <div className={styles.panel}>
+          <div className={styles.panelHeader}>
+            <span className={styles.panelTitle}>
+              Transcript {wordCount > 0 ? `(${wordCount} word${wordCount === 1 ? '' : 's'})` : ''}
+            </span>
+            <button
+              type="button"
+              className={styles.panelCancelBtn}
+              onClick={handleCancel}
+              title="Cancel and discard transcription"
+            >
+              <X size={14} aria-hidden="true" />
+              Cancel transcription
+            </button>
+          </div>
           <ol className={styles.panelLines}>
             {(lines.length > 0 ? lines : ['Nothing captured yet.']).map((line, index) => (
               <li key={`${index}-${line.slice(0, 12)}`} className={styles.panelLine}>
@@ -68,9 +127,9 @@ export function RecorderBar() {
                 Add to open note
               </Button>
             ) : null}
-            <Button variant="ghost" size="sm" onClick={reset} disabled={commit.busy}>
+            <Button variant="danger" size="sm" onClick={handleCancel} disabled={commit.busy}>
               <X size={15} aria-hidden="true" />
-              Discard
+              Cancel & discard
             </Button>
           </div>
           {commit.failed ? (
@@ -85,9 +144,15 @@ export function RecorderBar() {
         <div className={styles.status}>
           <span className={styles.dot} data-live={live} aria-hidden="true" />
           <span className={styles.statusText}>{statusLabels[status]}</span>
-          <span className={styles.engine}>
-            {engine === 'webspeech' ? 'Web Speech' : 'Replay'} · {langLabel(lang)}
-          </span>
+          <button
+            type="button"
+            className={styles.engineBtn}
+            onClick={handleCycleEngine}
+            disabled={live}
+            title={live ? 'Engine locked while recording' : 'Click to toggle speech engine (Gemini Live / Web Speech)'}
+          >
+            {engine === 'whisper' ? '✨ Gemini Live' : engine === 'webspeech' ? '🌐 Web Speech' : '📼 Replay'} · {langLabel(lang)}
+          </button>
         </div>
 
         <div className={styles.meter} aria-hidden="true">
@@ -114,24 +179,64 @@ export function RecorderBar() {
 
         <div className={styles.meta}>
           <span className={styles.time}>{formatDuration(elapsedMs)}</span>
-          <button type="button" className={styles.expand} onClick={toggleExpanded} disabled={!hasContent}>
-            {expanded ? 'Hide transcript' : 'Show transcript'}
-          </button>
+          <div className={styles.metaLinks}>
+            <button type="button" className={styles.expand} onClick={toggleExpanded} disabled={!hasContent}>
+              {expanded ? 'Hide transcript' : 'Show transcript'}
+            </button>
+            {hasActiveSession ? (
+              <>
+                <span className={styles.metaDot} aria-hidden="true">·</span>
+                <button
+                  type="button"
+                  className={styles.cancelLink}
+                  onClick={handleCancel}
+                  title="Cancel transcription"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : null}
+          </div>
         </div>
 
         <div className={styles.controls}>
           {errorMessage ? <span className={styles.error}>{errorMessage}</span> : null}
           {live ? (
-            <Button variant="accent" size="icon" onClick={stop} aria-label="Stop dictation">
-              <Square size={18} aria-hidden="true" />
-            </Button>
+            <>
+              <button
+                type="button"
+                className={styles.cancelBtn}
+                onClick={handleCancel}
+                aria-label="Cancel dictation"
+                title="Cancel transcription (discard)"
+              >
+                <X size={18} aria-hidden="true" />
+              </button>
+              <Button variant="accent" size="icon" onClick={stop} aria-label="Stop dictation" title="Stop & keep dictation">
+                <Square size={18} aria-hidden="true" />
+              </Button>
+            </>
           ) : (
-            <Button variant="accent" size="icon" onClick={start} aria-label="Start dictation">
-              <span className={styles.playIcon} aria-hidden="true" />
-            </Button>
+            <>
+              {hasActiveSession ? (
+                <button
+                  type="button"
+                  className={styles.cancelBtn}
+                  onClick={handleCancel}
+                  aria-label="Cancel and discard transcription"
+                  title="Cancel & discard transcription"
+                >
+                  <X size={18} aria-hidden="true" />
+                </button>
+              ) : null}
+              <Button variant="accent" size="icon" onClick={start} aria-label="Start dictation" title="Start dictation">
+                <span className={styles.playIcon} aria-hidden="true" />
+              </Button>
+            </>
           )}
         </div>
       </div>
     </section>
   )
 }
+

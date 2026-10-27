@@ -45,10 +45,31 @@
   text-overflow: ellipsis;
 }
 
-.engine {
+.engineBtn {
   font-size: 11px;
+  font-family: inherit;
   color: var(--bar-muted);
   white-space: nowrap;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--bar-line, rgba(255, 255, 255, 0.12));
+  border-radius: 6px;
+  padding: 2px 7px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.engineBtn:hover:not(:disabled) {
+  color: var(--bar-ink);
+  border-color: var(--accent);
+  background: rgba(255, 122, 26, 0.12);
+}
+
+.engineBtn:disabled {
+  cursor: default;
+  opacity: 0.7;
 }
 
 .meter {
@@ -119,10 +140,57 @@
   text-decoration: none;
 }
 
+.metaLinks {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.metaDot {
+  color: var(--bar-muted);
+  font-size: 11px;
+}
+
+.cancelLink {
+  font-size: 11px;
+  color: #f87171;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: opacity 0.15s ease;
+}
+
+.cancelLink:hover {
+  opacity: 0.8;
+}
+
 .controls {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.cancelBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  border: 1px solid var(--bar-line, rgba(255, 255, 255, 0.12));
+  color: var(--bar-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cancelBtn:hover {
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171;
 }
 
 .error {
@@ -146,6 +214,43 @@
   background: var(--surface-raised);
   color: var(--bar-ink);
   border-block-start: 1px solid var(--bar-line);
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--bar-line);
+}
+
+.panelTitle {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bar-muted);
+}
+
+.panelCancelBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 6px;
+  color: #f87171;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.panelCancelBtn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
 }
 
 .panelLines {
