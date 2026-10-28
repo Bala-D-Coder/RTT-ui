@@ -40,7 +40,7 @@ export function RecorderBar() {
   const handleCycleEngine = () => {
     if (live) return
     if (engine === 'webspeech') {
-      setEngineChoice('whisper')
+      setEngineChoice('gemini')
     } else {
       setEngineChoice('webspeech')
     }
@@ -151,7 +151,7 @@ export function RecorderBar() {
             disabled={live}
             title={live ? 'Engine locked while recording' : 'Click to toggle speech engine (Gemini Live / Web Speech)'}
           >
-            {engine === 'whisper' ? '✨ Gemini Live' : engine === 'webspeech' ? '🌐 Web Speech' : '📼 Replay'} · {langLabel(lang)}
+            {engine === 'gemini' || engine === 'whisper' ? '✨ Gemini Live' : engine === 'webspeech' ? '🌐 Web Speech' : '📼 Replay'} · {langLabel(lang)}
           </button>
         </div>
 

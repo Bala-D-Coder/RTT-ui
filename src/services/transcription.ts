@@ -1,4 +1,3 @@
-import { env } from '@/constants/env'
 import type { WsTranscribeEvent } from '@/types/contracts'
 import { createWebSpeechDriver, isWebSpeechSupported } from './web-speech'
 import { createServerWsDriver } from './server-ws'
@@ -39,7 +38,7 @@ export interface TranscriptionDriver {
   stop(): void
 }
 
-export type EngineName = 'webspeech' | 'whisper' | 'replay'
+export type EngineName = 'webspeech' | 'gemini' | 'whisper' | 'replay'
 
 const ENGINE_KEY = 'voice-notes.engine'
 export const ENGINE_CHANGE = 'voice-notes:engine-change'
@@ -56,9 +55,13 @@ function wordChunks(line: string) {
 }
 
 export function engineChoice(): EngineName {
-  const stored = window.localStorage.getItem(ENGINE_KEY)
-  if (stored === 'webspeech' || stored === 'whisper' || stored === 'replay') return stored
-  return isWebSpeechSupported() ? env.transcribe : 'replay'
+  const stored = window.localStorage.getItem(ENGINE_KEY) as EngineName | null
+  if (stored === 'whisper') {
+    window.localStorage.setItem(ENGINE_KEY, 'gemini')
+    return 'gemini'
+  }
+  if (stored === 'webspeech' || stored === 'gemini' || stored === 'replay') return stored
+  return 'gemini'
 }
 
 export function setEngineChoice(next: EngineName) {
@@ -147,7 +150,7 @@ export function createReplayDriver(): TranscriptionDriver {
 }
 
 export function createDriver(choice: EngineName = engineChoice()): TranscriptionDriver {
-  if (choice === 'whisper') return createServerWsDriver()
+  if (choice === 'gemini' || choice === 'whisper') return createServerWsDriver()
   if (choice === 'webspeech' && isWebSpeechSupported()) return createWebSpeechDriver()
   return createReplayDriver()
 }

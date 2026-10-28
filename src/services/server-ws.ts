@@ -17,7 +17,7 @@ export function createServerWsDriver(): TranscriptionDriver {
   }
 
   return {
-    name: 'whisper',
+    name: 'gemini',
     model: 'gemini-3.5-transcribe-live',
     supported: Boolean(window.WebSocket && navigator.mediaDevices?.getUserMedia),
 
@@ -109,10 +109,6 @@ export function createServerWsDriver(): TranscriptionDriver {
         }
 
         // 3. Audio capture at NATIVE hardware rate + manual clean downsample to 16000 Hz.
-        // NOTE: In Chromium on Windows, passing { sampleRate: 16000 } to AudioContext causes
-        // MediaStreamAudioSourceNode to feed raw 48 kHz hardware audio WITHOUT resampling,
-        // which stretches speech by 3x into an unintelligible low-frequency rumble.
-        // Capturing at native rate and downsampling manually guarantees true 16 kHz audio.
         stream = await navigator.mediaDevices.getUserMedia({
           audio: {
             channelCount: 1,
@@ -121,6 +117,9 @@ export function createServerWsDriver(): TranscriptionDriver {
             autoGainControl: true,
           },
         })
+
+        const track = stream.getAudioTracks()[0]
+        console.log(`[ServerWS] 🎤 Mic acquired: "${track?.label ?? 'default'}"`, track?.getSettings())
 
         const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
         audioContext = new AudioContextClass()
@@ -132,19 +131,29 @@ export function createServerWsDriver(): TranscriptionDriver {
         const nativeRate = audioContext.sampleRate // e.g. 48000 Hz
         const TARGET_RATE = 16000
         const downsampleRatio = nativeRate / TARGET_RATE // e.g. 3.0
-        console.log(`[ServerWS] AudioContext running at native ${nativeRate} Hz (resampling to ${TARGET_RATE} Hz, ratio: ${downsampleRatio.toFixed(3)})`)
+        console.log(`[ServerWS] 🎛️ AudioContext native rate: ${nativeRate} Hz (resampling to ${TARGET_RATE} Hz, ratio: ${downsampleRatio.toFixed(3)})`)
 
         const source = audioContext.createMediaStreamSource(stream)
 
-        // Setup visual level meter analyser directly on the source
+        // 100 Hz highpass filter: strips AC electrical ground hum (50/100 Hz) while preserving human speech
+        const highpass = audioContext.createBiquadFilter()
+        highpass.type = 'highpass'
+        highpass.frequency.value = 100
+        source.connect(highpass)
+
+        // Speech booster gain node (2.5x digital boost) to amplify quiet laptop built-in microphones
+        const micBoost = audioContext.createGain()
+        micBoost.gain.value = 2.5
+        highpass.connect(micBoost)
+
+        // Setup visual level meter analyser
         analyser = audioContext.createAnalyser()
         analyser.fftSize = 512
         analyser.smoothingTimeConstant = 0.75
         analyserData = new Uint8Array(analyser.frequencyBinCount)
-        source.connect(analyser)
+        micBoost.connect(analyser)
 
-        // 4096 samples at 48 kHz ≈ 85.3 ms of audio
-        // After downsample by 3.0 → ~1365 samples at 16 kHz (2730 bytes PCM16)
+        // 4096 samples at 48 kHz ≈ 85.3 ms of audio (~1365 samples at 16 kHz = 2730 bytes PCM16)
         const bufferSize = 4096
         processor = audioContext.createScriptProcessor(bufferSize, 1, 1)
 
@@ -156,6 +165,7 @@ export function createServerWsDriver(): TranscriptionDriver {
           // Downsample inputData (nativeRate) to 16000 Hz
           const outputLength = Math.floor(inputData.length / downsampleRatio)
           const pcm16 = new Int16Array(outputLength)
+          let framePeak = 0
           for (let i = 0; i < outputLength; i++) {
             const srcPos = i * downsampleRatio
             const lo = Math.floor(srcPos)
@@ -165,13 +175,17 @@ export function createServerWsDriver(): TranscriptionDriver {
             const sHi = inputData[hi] ?? 0
             const sample = sLo * (1 - frac) + sHi * frac
             const clamped = Math.max(-1, Math.min(1, sample))
-            pcm16[i] = clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff
+            const val = clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff
+            pcm16[i] = val
+            const abs = Math.abs(val)
+            if (abs > framePeak) framePeak = abs
           }
 
           if (pcm16.length > 0) {
             chunkCounter++
             if (chunkCounter === 1 || chunkCounter % 40 === 0) {
-              console.log(`[ServerWS] Sent audio chunk #${chunkCounter} (${pcm16.byteLength} bytes @ 16 kHz)`)
+              const peakPct = ((framePeak / 32767) * 100).toFixed(1)
+              console.log(`[ServerWS] 📤 Sent audio chunk #${chunkCounter} (${pcm16.byteLength} bytes @ 16 kHz, peak: ${Math.round(framePeak)} / 32767 [${peakPct}%])`)
             }
             ws.send(pcm16.buffer)
           }
@@ -181,7 +195,7 @@ export function createServerWsDriver(): TranscriptionDriver {
         // WITHOUT playing microphone audio back into the speakers (prevents feedback howl)
         const muteGain = audioContext.createGain()
         muteGain.gain.value = 0
-        source.connect(processor)
+        micBoost.connect(processor)
         processor.connect(muteGain)
         muteGain.connect(audioContext.destination)
       } catch (err) {

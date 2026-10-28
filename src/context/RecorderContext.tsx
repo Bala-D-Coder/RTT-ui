@@ -81,6 +81,7 @@ export function RecorderProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = driver.subscribe((event) => {
+      console.log(`[RecorderContext] 📡 Received event:`, event)
       if (event.type === 'partial') {
         interimRef.current = event.text
         setInterim(event.text)
@@ -91,10 +92,12 @@ export function RecorderProvider({ children }: { children: ReactNode }) {
         setInterim('')
       }
       if (event.type === 'error') {
+        console.error(`[RecorderContext] ❌ Driver error:`, event.message)
         setErrorMessage(event.message)
         if (event.retryable === false) setStatus('error')
       }
       if (event.type === 'closed' && runningRef.current) {
+        console.log(`[RecorderContext] 🔒 Session closed:`, event.reason)
         runningRef.current = false
         setStatus('idle')
       }
@@ -119,6 +122,7 @@ export function RecorderProvider({ children }: { children: ReactNode }) {
   }, [status, driver])
 
   const start = useCallback(() => {
+    console.log(`[RecorderContext] 🎙️ Start dictation requested (engine: ${engine}, lang: ${lang})`)
     setErrorMessage(null)
     setLines([])
     interimRef.current = ''
@@ -130,14 +134,18 @@ export function RecorderProvider({ children }: { children: ReactNode }) {
       setStatus('listening')
       driver.start({ lang: resolveLang() })
     }, 400)
-  }, [driver])
+  }, [driver, engine, lang])
 
   const stop = useCallback(() => {
+    console.log(`[RecorderContext] 🛑 Stop dictation requested. Pending interim: "${interimRef.current}"`)
     driver.stop()
     runningRef.current = false
     const pending = interimRef.current.trim()
     interimRef.current = ''
-    if (pending) setLines((current) => [...current, pending])
+    if (pending) {
+      console.log(`[RecorderContext] Appending pending interim to lines: "${pending}"`)
+      setLines((current) => [...current, pending])
+    }
     setInterim('')
     setLevels(null)
     setStatus('idle')
