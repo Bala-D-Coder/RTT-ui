@@ -75,7 +75,7 @@ To guarantee contract honesty without manual copy-paste errors:
 | `/` | **Home** | "What did I capture today?" Greeting, capture buttons, and today's timeline with speech provenance indicators. |
 | `/notes` | **Notes** | Search (debounced), tag filters, sort options (edited / created / title), grid ⇄ list views, and a dedicated **Voice** chip filtering dictated notes. |
 | `/notes/:id` | **Note Editor** | Block editor with autosave, colour picker, tag pills, per-block editing, note download/export (`.md`, `.txt`, `.json`), and reminder management. |
-| `/bin` | **Bin** | Soft-deleted notes with 30-day countdown, restore, permanent purge, and empty bin. |
+| `/bin` | **Bin** | Soft-deleted notes with 7-day countdown, restore, permanent purge, and empty bin. |
 | `/settings` | **Settings** | Light/dark theme switch, engine switch, data source status, retention policy info, and session logout. |
 | `/login` | **Login** | Email & password form with demo account quick-fill (`demo@apex.in`) and 4 server error envelopes (`invalid_credentials`, `account_locked`, `credentials_expired`, `account_disabled`). |
 | `/admin` | **Admin** | Restricted to `role: admin`. Manage issued credentials (issue new token, extend +24h, disable/enable, revoke) and reseed database sample data (`POST /api/v1/admin/reseed`). |

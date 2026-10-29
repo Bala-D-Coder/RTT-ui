@@ -2,7 +2,7 @@ import type { ISODate } from '@/types/contracts'
 
 // The only place the retention window is written down. The Bin copy, the countdown
 // bar and the purge scanner all read it from here.
-export const BIN_RETENTION_DAYS = 30
+export const BIN_RETENTION_DAYS = 7
 
 const DAY_MS = 86_400_000
 

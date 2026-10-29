@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Download, Pin, Plus, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/Button/Button'
+import { BIN_RETENTION_DAYS } from '@/constants/bin'
 import { env } from '@/constants/env'
 import { downloadNote } from '@/services/download'
 import { useRecorder } from '@/context/RecorderContext'
@@ -345,7 +346,8 @@ export function ViewNote() {
       </section>
 
       <p className={styles.deleteNote}>
-        Deleting moves this note to the Bin, where it stays for 30 days before permanent deletion.
+        Deleting moves this note to the Bin, where it stays for {BIN_RETENTION_DAYS} days before
+        permanent deletion.
       </p>
     </article>
   )

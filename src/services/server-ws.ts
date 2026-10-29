@@ -12,8 +12,75 @@ export function createServerWsDriver(): TranscriptionDriver {
   let analyserData: Uint8Array<ArrayBuffer> | null = null
   let running = false
 
+  // A server engine that accepts audio but never emits text leaves the bar stuck on
+  // "Listening…" forever, so a silent session is reported as a failure instead.
+  const NO_TRANSCRIPT_MS = 12_000
+  let noTextTimer: number | null = null
+
   const emit = (event: WsTranscribeEvent) => {
     for (const listener of listeners) listener(event)
+  }
+
+  function clearNoTextTimer() {
+    if (noTextTimer !== null) {
+      window.clearTimeout(noTextTimer)
+      noTextTimer = null
+    }
+  }
+
+  function armNoTextTimer() {
+    clearNoTextTimer()
+    noTextTimer = window.setTimeout(() => {
+      noTextTimer = null
+      emit({
+        type: 'error',
+        code: 'no_transcript',
+        message: 'The Gemini Live model returned no transcript. Switch the engine to Web Speech or Whisper.',
+        retryable: false,
+      })
+      stopSession()
+    }, NO_TRANSCRIPT_MS)
+  }
+
+  function stopSession() {
+    running = false
+    clearNoTextTimer()
+
+    // 1. Immediately cut off microphone and audio processing so no unwanted thumps/clicks are sent
+    if (processor) {
+      processor.disconnect()
+      processor = null
+    }
+    if (audioContext) {
+      void audioContext.close()
+      audioContext = null
+    }
+    if (stream) {
+      for (const track of stream.getTracks()) track.stop()
+      stream = null
+    }
+    analyser = null
+    analyserData = null
+
+    // 2. Request backend flush and allow 2.5s graceful drain period for in-flight transcripts to arrive
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(JSON.stringify({ type: 'flush' }))
+        ws.send('flush')
+      } catch {}
+
+      const activeWs = ws
+      setTimeout(() => {
+        try {
+          if (activeWs.readyState === WebSocket.OPEN) {
+            activeWs.close(1000, 'User stopped dictation')
+          }
+        } catch {}
+        if (ws === activeWs) ws = null
+      }, 2500)
+    } else {
+      ws = null
+    }
   }
 
   return {
@@ -45,6 +112,7 @@ export function createServerWsDriver(): TranscriptionDriver {
 
     async start(_options: TranscriptionOptions) {
       running = true
+      clearNoTextTimer()
 
       try {
         // 1. Fetch single-use ticket from backend
@@ -82,7 +150,10 @@ export function createServerWsDriver(): TranscriptionDriver {
               const msg = JSON.parse(event.data) as WsTranscribeEvent
               if (msg.type === 'partial' || msg.type === 'final') {
                 console.log(`[ServerWS] [${msg.type}]`, msg.text)
+                armNoTextTimer()
               }
+              if (msg.type === 'ready') armNoTextTimer()
+              if (msg.type === 'closed') clearNoTextTimer()
               emit(msg)
             } catch (err) {
               console.warn('[ServerWS] Failed to parse WS transcribe message', err)
@@ -102,6 +173,7 @@ export function createServerWsDriver(): TranscriptionDriver {
 
         ws.onclose = (event) => {
           console.log('[ServerWS] WebSocket closed:', event.code, event.reason)
+          clearNoTextTimer()
           if (running) {
             running = false
             emit({ type: 'closed', reason: event.reason || 'Server closed connection' })
@@ -141,9 +213,9 @@ export function createServerWsDriver(): TranscriptionDriver {
         highpass.frequency.value = 100
         source.connect(highpass)
 
-        // Speech booster gain node (2.5x digital boost) to amplify quiet laptop built-in microphones
+        // Speech booster gain node (6.0x digital boost) to amplify quiet laptop built-in microphones into VAD range
         const micBoost = audioContext.createGain()
-        micBoost.gain.value = 2.5
+        micBoost.gain.value = 6.0
         highpass.connect(micBoost)
 
         // Setup visual level meter analyser
@@ -211,36 +283,7 @@ export function createServerWsDriver(): TranscriptionDriver {
     },
 
     stop() {
-      running = false
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        try {
-          ws.send(JSON.stringify({ type: 'flush' }))
-          ws.send('flush')
-        } catch {}
-        setTimeout(() => {
-          try {
-            ws?.close(1000, 'User stopped dictation')
-          } catch {}
-          ws = null
-        }, 300)
-      } else {
-        ws = null
-      }
-
-      if (processor) {
-        processor.disconnect()
-        processor = null
-      }
-      if (audioContext) {
-        void audioContext.close()
-        audioContext = null
-      }
-      if (stream) {
-        for (const track of stream.getTracks()) track.stop()
-        stream = null
-      }
-      analyser = null
-      analyserData = null
+      stopSession()
     },
   }
 }

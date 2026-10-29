@@ -224,7 +224,7 @@ export const mockDataSource: DataSource = {
     trash(id) {
       return call(() => {
         const current = mustFind(id)
-        // Idempotent: re-deleting from the Bin must not restart the 30-day clock.
+        // Idempotent: re-deleting from the Bin must not restart the 7-day clock.
         if (current.deletedAt) return current
         const deletedAt = new Date().toISOString()
         const next: Note = { ...current, deletedAt, purgeAt: purgeDateFor(deletedAt) }

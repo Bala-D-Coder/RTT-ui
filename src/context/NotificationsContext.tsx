@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { BIN_RETENTION_DAYS } from '@/constants/bin'
 import { startPurgeScanner } from '@/services/data-source'
 import { startReminderScanner } from '@/services/reminder-scanner'
 import { localId } from '@/utils/format'
@@ -54,7 +55,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       onPurge: (count: number) => {
         push({
           title: 'Bin cleared',
-          body: `${count} note${count === 1 ? '' : 's'} passed the 30-day limit and were deleted permanently.`,
+          body: `${count} note${count === 1 ? '' : 's'} passed the ${BIN_RETENTION_DAYS}-day limit and were deleted permanently.`,
           to: '/bin',
         })
         refreshNoteViews(client)

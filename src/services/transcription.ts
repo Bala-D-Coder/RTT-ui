@@ -40,7 +40,9 @@ export interface TranscriptionDriver {
 
 export type EngineName = 'webspeech' | 'gemini' | 'whisper' | 'replay'
 
-const ENGINE_KEY = 'voice-notes.engine'
+// v2: the v1 key carried a stored 'gemini' choice that pointed at a model which
+// returns no transcript, so the choice is re-derived instead of migrated.
+const ENGINE_KEY = 'voice-notes.engine.v2'
 export const ENGINE_CHANGE = 'voice-notes:engine-change'
 
 const REPLAY_SCRIPT: Array<{ text: string; lang: string }> = [
@@ -56,12 +58,9 @@ function wordChunks(line: string) {
 
 export function engineChoice(): EngineName {
   const stored = window.localStorage.getItem(ENGINE_KEY) as EngineName | null
-  if (stored === 'whisper') {
-    window.localStorage.setItem(ENGINE_KEY, 'gemini')
-    return 'gemini'
-  }
   if (stored === 'webspeech' || stored === 'gemini' || stored === 'replay') return stored
-  return 'gemini'
+  // Browser speech needs no backend and works today; the server engines stay one click away.
+  return isWebSpeechSupported() ? 'webspeech' : 'replay'
 }
 
 export function setEngineChoice(next: EngineName) {
