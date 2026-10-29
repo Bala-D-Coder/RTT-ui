@@ -1,0 +1,129 @@
+.item {
+  list-style: none;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 196px;
+  padding: 18px;
+  border: 1px solid var(--note-line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: var(--note-ink);
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.card[data-color='sand'] {
+  background: var(--note-sand);
+}
+
+.card[data-color='coral'] {
+  background: var(--note-coral);
+}
+
+.card[data-color='violet'] {
+  background: var(--note-violet);
+}
+
+.card[data-color='aqua'] {
+  background: var(--note-aqua);
+}
+
+.card[data-color='lime'] {
+  background: var(--note-lime);
+}
+
+.card[data-color='mint'] {
+  background: var(--note-mint);
+}
+
+.card[data-dense='true'] {
+  min-height: 0;
+  gap: 8px;
+  padding: 14px 18px;
+}
+
+.card[data-dense='true'] .preview {
+  -webkit-line-clamp: 2;
+}
+
+.heading {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.open::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.open:hover {
+  text-decoration: underline;
+}
+
+.preview {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--note-ink-soft);
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--note-ink-soft);
+}
+
+.tag {
+  padding: 2px 8px;
+  border: 1px solid var(--note-line);
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--note-ink-soft);
+}
+
+.actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 6px;
+  margin-inline-start: auto;
+}
+
+.iconButton {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--note-chip);
+  color: var(--note-ink);
+}
+
+.iconButton:hover {
+  background: var(--note-chip-solid);
+}
+
+.iconButton[data-active='true'] {
+  background: var(--ink);
+  color: var(--btn-primary-fg);
+}
