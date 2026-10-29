@@ -1,0 +1,311 @@
+.wrap {
+  max-width: 760px;
+  margin-inline: auto;
+  padding: 4px 0 0;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.back:hover {
+  color: var(--ink);
+}
+
+.barActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.saveState {
+  margin-inline-end: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.title {
+  width: 100%;
+  margin: 18px 0 14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  color: var(--ink);
+}
+
+.title::placeholder {
+  color: var(--muted);
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.dots {
+  display: flex;
+  gap: 8px;
+}
+
+.dot {
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--note-line);
+  border-radius: 50%;
+  background: var(--note-sand);
+}
+
+.dot[data-color='coral'] {
+  background: var(--note-coral);
+}
+
+.dot[data-color='violet'] {
+  background: var(--note-violet);
+}
+
+.dot[data-color='aqua'] {
+  background: var(--note-aqua);
+}
+
+.dot[data-color='lime'] {
+  background: var(--note-lime);
+}
+
+.dot[data-color='mint'] {
+  background: var(--note-mint);
+}
+
+.dot[data-active='true'] {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 2px var(--ring-strong);
+}
+
+.tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 6px 4px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  background: var(--surface);
+}
+
+.tagRemove {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  color: var(--muted);
+}
+
+.tagRemove:hover {
+  background: var(--wash-strong);
+  color: var(--ink);
+}
+
+.tagInput {
+  width: 96px;
+  padding: 5px 10px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.tagInput::placeholder {
+  color: var(--muted);
+}
+
+.dates {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.block {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.blockText {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--ink);
+  resize: vertical;
+}
+
+.blockDelete {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  color: var(--muted);
+  opacity: 0;
+}
+
+.block:hover .blockDelete,
+.blockDelete:focus-visible {
+  opacity: 1;
+}
+
+.blockDelete:hover {
+  color: var(--danger);
+}
+
+.empty {
+  padding: 22px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-card);
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.composerRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.typeBox {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--canvas);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+  resize: vertical;
+}
+
+.composerButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.dictationHint {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.reminders {
+  margin-top: 26px;
+}
+
+.remindersHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.remindersTitle {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.remindersCount {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.reminderList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.recorderError {
+  font-size: 13px;
+  color: var(--danger);
+}
+
+.deleteNote {
+  margin-top: 22px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.loading,
+.missing {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .blockDelete {
+    opacity: 1;
+  }
+}

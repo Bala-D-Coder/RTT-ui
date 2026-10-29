@@ -1,0 +1,30 @@
+.wrap {
+  max-width: 520px;
+  padding-top: 40px;
+}
+
+.code {
+  font-size: 64px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--line);
+}
+
+.title {
+  margin-top: 6px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.hint {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.link {
+  color: var(--ink);
+  font-weight: 500;
+  text-decoration: underline;
+}
